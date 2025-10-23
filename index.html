@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YouTube Search + Playlist Player (No API Key)</title>
   <style>
     body {
@@ -56,13 +56,15 @@
       user-select: none;
     }
     .video-title { padding: 0.5rem; font-size: 0.9rem; }
-    iframe {
+    #player-container {
       margin-top: 2rem;
       width: 80%;
       max-width: 800px;
       height: 450px;
-      border: none;
+      margin-left: auto;
+      margin-right: auto;
       border-radius: 8px;
+      overflow: hidden;
     }
     #playlist-container {
       margin-top: 3rem;
@@ -80,6 +82,15 @@
       width: 80%;
       max-width: 500px;
       border-radius: 5px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #playlist li:hover {
+      background: #333;
+    }
+    #playlist li.active {
+      background: #ff0000;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -97,10 +108,46 @@
     <ul id="playlist"></ul>
   </div>
 
-  <iframe id="player" allowfullscreen></iframe>
+  <div id="player-container">
+    <div id="player"></div>
+  </div>
 
   <script>
-    const videos = [];
+    let videos = [];
+    let player;
+    let currentIndex = -1;
+
+    // Load YouTube IFrame Player API asynchronously
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    // This function gets called by YouTube API when it's ready
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '450',
+        width: '800',
+        videoId: '',
+        events: {
+          'onStateChange': onPlayerStateChange
+        },
+        playerVars: {
+          autoplay: 0,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+          fs: 1,
+          disablekb: 0
+        }
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      // Video ended
+      if (event.data === YT.PlayerState.ENDED) {
+        playNextInPlaylist();
+      }
+    }
 
     async function searchVideos() {
       const query = document.getElementById("searchInput").value.trim();
@@ -116,22 +163,34 @@
         const response = await fetch(`https://corsproxy.io/?https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
         const text = await response.text();
 
-        const videoIds = [...text.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)]
-          .map(match => match[1])
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .slice(0, 6);
+        const videoIdMatches = [...text.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)];
+        const titleMatches = [...text.matchAll(/"title":{"runs":\[{"text":"([^"]+)"}\]/g)];
 
-        if (videoIds.length === 0) {
+        const videoIds = videoIdMatches.map(match => match[1]);
+        const titles = titleMatches.map(match => match[1]);
+
+        const uniqueVideos = [];
+        for(let i = 0; i < videoIds.length; i++) {
+          if (videoIds[i] && titles[i]) {
+            if (!uniqueVideos.find(v => v.id === videoIds[i])) {
+              uniqueVideos.push({ id: videoIds[i], title: titles[i] });
+            }
+          }
+        }
+
+        const results = uniqueVideos.slice(0, 6);
+
+        if (results.length === 0) {
           resultsDiv.innerHTML = "<p>No results found.</p>";
           return;
         }
 
-        videoIds.forEach(id => {
+        results.forEach(({id, title}) => {
           const div = document.createElement("div");
           div.className = "video";
           div.innerHTML = `
             <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="Thumbnail" onclick="playVideo('${id}')" />
-            <div class="video-title">Video ID: ${id}</div>
+            <div class="video-title">${title}</div>
             <button onclick="addToPlaylist('${id}')">➕ Add to Playlist</button>
           `;
           resultsDiv.appendChild(div);
@@ -143,8 +202,8 @@
     }
 
     function playVideo(id) {
-      const player = document.getElementById("player");
-      player.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+      currentIndex = -1; // Playing single video, not from playlist
+      player.loadVideoById(id);
     }
 
     function addToPlaylist(id) {
@@ -156,7 +215,12 @@
 
     function renderPlaylist() {
       const list = document.getElementById("playlist");
-      list.innerHTML = videos.map((v, i) => `<li>${i + 1}. ${v}</li>`).join("");
+      list.innerHTML = videos
+        .map((id, i) => {
+          const activeClass = (i === currentIndex) ? 'active' : '';
+          return `<li class="${activeClass}" onclick="playFromPlaylist(${i})">${i + 1}. ${id}</li>`;
+        })
+        .join("");
     }
 
     function playPlaylist() {
@@ -164,16 +228,31 @@
         alert("Add at least one video to the playlist.");
         return;
       }
-      const first = videos[0];
-      const rest = videos.slice(1).join(",");
-      const player = document.getElementById("player");
-      player.src = `https://www.youtube.com/embed/${first}?playlist=${rest}&autoplay=1`;
+      currentIndex = 0;
+      playFromPlaylist(currentIndex);
+    }
+
+    function playFromPlaylist(index) {
+      if (index < 0 || index >= videos.length) return;
+      currentIndex = index;
+      player.loadVideoById(videos[index]);
+      renderPlaylist();
+    }
+
+    function playNextInPlaylist() {
+      if (currentIndex === -1) return; // not playing playlist
+      currentIndex++;
+      if (currentIndex >= videos.length) {
+        currentIndex = 0; // loop back to start
+      }
+      playFromPlaylist(currentIndex);
     }
 
     function clearPlaylist() {
-      videos.length = 0;
+      videos = [];
+      currentIndex = -1;
       renderPlaylist();
-      document.getElementById("player").src = "";
+      player.stopVideo();
     }
   </script>
 </body>
