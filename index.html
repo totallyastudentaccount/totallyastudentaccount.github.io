@@ -7,57 +7,82 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
+      background-color: #0d0d0d;
+      color: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
       margin: 0;
-      padding: 2em;
+      padding: 2rem;
     }
     h1 {
-      margin-bottom: 1em;
       color: #ff0000;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    #input-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 600px;
     }
     input[type="text"] {
-      width: 80%;
-      max-width: 500px;
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 4px;
-      margin-bottom: 1em;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 2px solid #ff0000;
+      outline: none;
+      margin-bottom: 1rem;
+      background: #1a1a1a;
+      color: white;
     }
     button {
-      background: #ff0000;
+      background-color: #ff0000;
       color: white;
       border: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
     button:hover {
-      background: #cc0000;
+      background-color: #cc0000;
     }
     iframe {
-      margin-top: 2em;
-      width: 80%;
+      display: none;
+      margin-top: 2rem;
+      width: 100%;
       max-width: 800px;
       height: 450px;
       border: none;
       border-radius: 8px;
     }
+    #placeholder {
+      margin-top: 2rem;
+      font-size: 1.1rem;
+      color: #aaa;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <h1>🎬 YouTube Video Player</h1>
-  <input id="videoUrl" type="text" placeholder="Enter YouTube link here..." />
-  <button onclick="loadVideo()">Play Video</button>
+  <div id="input-container">
+    <input
+      id="videoUrl"
+      type="text"
+      placeholder="Paste a YouTube link here (e.g. https://youtu.be/dQw4w9WgXcQ)"
+    />
+    <button onclick="loadVideo()">Play Video</button>
+  </div>
 
-  <iframe id="videoFrame" src="" allowfullscreen></iframe>
+  <iframe id="videoFrame" allowfullscreen></iframe>
+  <div id="placeholder">Enter a YouTube link above and click “Play Video”.</div>
 
   <script>
     function extractVideoId(url) {
@@ -68,12 +93,15 @@
     }
 
     function loadVideo() {
-      const input = document.getElementById("videoUrl").value;
+      const input = document.getElementById("videoUrl").value.trim();
       const videoId = extractVideoId(input);
       const iframe = document.getElementById("videoFrame");
+      const placeholder = document.getElementById("placeholder");
 
       if (videoId) {
         iframe.src = `https://www.youtube.com/embed/${videoId}`;
+        iframe.style.display = "block";
+        placeholder.style.display = "none";
       } else {
         alert("Please enter a valid YouTube link.");
       }
