@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search</title>
+  <title>YouTube Search Playlist Player (No API Key)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,7 +12,7 @@
       text-align: center;
       padding: 2rem;
     }
-    h1 { color: #ff0000; }
+    h1 { color: #ff0000; margin-bottom: 1rem; }
     #searchInput {
       width: 70%;
       max-width: 500px;
@@ -27,11 +27,11 @@
       background: #ff0000;
       color: white;
       border: none;
-      padding: 0.7rem 1.5rem;
+      padding: 0.7rem 1.2rem;
       font-size: 1rem;
       border-radius: 5px;
       cursor: pointer;
-      margin-left: 10px;
+      margin-left: 5px;
     }
     button:hover { background: #cc0000; }
     #results {
@@ -42,7 +42,7 @@
       gap: 1rem;
     }
     .video {
-      width: 300px;
+      width: 260px;
       background: #1a1a1a;
       border-radius: 8px;
       overflow: hidden;
@@ -60,23 +60,49 @@
       border: none;
       border-radius: 8px;
     }
+    #playlist-container {
+      margin-top: 3rem;
+      text-align: center;
+    }
+    #playlist {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+    }
+    #playlist li {
+      background: #1a1a1a;
+      padding: 0.5rem;
+      margin: 0.3rem auto;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
-  <h1>🔎 YouTube Search Player</h1>
+  <h1>🔎 YouTube Search + Playlist Player</h1>
   <input id="searchInput" type="text" placeholder="Search for a YouTube video..." />
   <button onclick="searchVideos()">Search</button>
 
   <div id="results"></div>
+
+  <div id="playlist-container">
+    <h2>🎵 Playlist</h2>
+    <button onclick="playPlaylist()">▶️ Play Playlist</button>
+    <button onclick="clearPlaylist()">🗑️ Clear</button>
+    <ul id="playlist"></ul>
+  </div>
+
   <iframe id="player" allowfullscreen></iframe>
 
   <script>
+    const videos = [];
+
+    // Search videos (no API key)
     async function searchVideos() {
       const query = document.getElementById("searchInput").value.trim();
       const resultsDiv = document.getElementById("results");
-      const player = document.getElementById("player");
       resultsDiv.innerHTML = "";
-      player.src = "";
 
       if (!query) {
         alert("Please enter a search term.");
@@ -84,11 +110,9 @@
       }
 
       try {
-        // Use a public search endpoint (returns YouTube HTML)
         const response = await fetch(`https://corsproxy.io/?https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
         const text = await response.text();
 
-        // Extract video IDs from the HTML (regex-based)
         const videoIds = [...text.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)]
           .map(match => match[1])
           .filter((v, i, a) => a.indexOf(v) === i)
@@ -103,19 +127,45 @@
           const div = document.createElement("div");
           div.className = "video";
           div.innerHTML = `
-            <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="Video Thumbnail">
+            <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="Thumbnail">
             <div class="video-title">Video ID: ${id}</div>
+            <button onclick="addToPlaylist('${id}')">➕ Add to Playlist</button>
           `;
-          div.onclick = () => {
-            player.src = `https://www.youtube.com/embed/${id}`;
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          };
           resultsDiv.appendChild(div);
         });
       } catch (error) {
         console.error("Search error:", error);
         resultsDiv.innerHTML = "<p>Failed to fetch search results.</p>";
       }
+    }
+
+    function addToPlaylist(id) {
+      if (!videos.includes(id)) {
+        videos.push(id);
+        renderPlaylist();
+      }
+    }
+
+    function renderPlaylist() {
+      const list = document.getElementById("playlist");
+      list.innerHTML = videos.map((v, i) => `<li>${i + 1}. ${v}</li>`).join("");
+    }
+
+    function playPlaylist() {
+      if (videos.length === 0) {
+        alert("Add at least one video to the playlist.");
+        return;
+      }
+      const first = videos[0];
+      const rest = videos.slice(1).join(",");
+      const player = document.getElementById("player");
+      player.src = `https://www.youtube.com/embed/${first}?playlist=${rest}&autoplay=1`;
+    }
+
+    function clearPlaylist() {
+      videos.length = 0;
+      renderPlaylist();
+      document.getElementById("player").src = "";
     }
   </script>
 </body>
