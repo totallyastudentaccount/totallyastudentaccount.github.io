@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Search Playlist Player (No API Key)</title>
+  <title>YouTube Search + Playlist Player (No API Key)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -46,11 +46,15 @@
       background: #1a1a1a;
       border-radius: 8px;
       overflow: hidden;
-      cursor: pointer;
+      cursor: default;
       transition: transform 0.2s ease;
     }
     .video:hover { transform: scale(1.05); }
-    .video img { width: 100%; }
+    .video img {
+      width: 100%;
+      cursor: pointer;
+      user-select: none;
+    }
     .video-title { padding: 0.5rem; font-size: 0.9rem; }
     iframe {
       margin-top: 2rem;
@@ -98,7 +102,6 @@
   <script>
     const videos = [];
 
-    // Search videos (no API key)
     async function searchVideos() {
       const query = document.getElementById("searchInput").value.trim();
       const resultsDiv = document.getElementById("results");
@@ -127,7 +130,7 @@
           const div = document.createElement("div");
           div.className = "video";
           div.innerHTML = `
-            <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="Thumbnail">
+            <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="Thumbnail" onclick="playVideo('${id}')" />
             <div class="video-title">Video ID: ${id}</div>
             <button onclick="addToPlaylist('${id}')">➕ Add to Playlist</button>
           `;
@@ -137,6 +140,11 @@
         console.error("Search error:", error);
         resultsDiv.innerHTML = "<p>Failed to fetch search results.</p>";
       }
+    }
+
+    function playVideo(id) {
+      const player = document.getElementById("player");
+      player.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
     }
 
     function addToPlaylist(id) {
