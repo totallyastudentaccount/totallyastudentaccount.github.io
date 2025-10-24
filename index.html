@@ -173,21 +173,26 @@
       color: #ff0000;
     }
 
-    #results button {
-  background-color: #e5e5e5;
-  color: #0f0f0f;
-  border: none;
-  padding: 8px 16px;
-  margin: 5px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-}
+    /* Pagination Buttons */
+    .pagination {
+      text-align: center;
+      margin: 20px 0;
+    }
 
-#results button:hover {
-  background-color: #d3d3d3;
-}
+    .pagination button {
+      background-color: #e5e5e5;
+      color: #0f0f0f;
+      border: none;
+      padding: 8px 16px;
+      margin: 5px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
+    .pagination button:hover {
+      background-color: #d3d3d3;
+    }
   </style>
 </head>
 <body>
@@ -212,7 +217,7 @@
   </main>
 
   <script>
-    const apiKey = "AIzaSyA0XIPgl1-esWiDqNU8LnIcW0nPhs7zTFs"; // 👈 Replace with your YouTube Data API v3 key
+    const apiKey = "AIzaSyA0XIPgl1-esWiDqNU8LnIcW0nPhs7zTFs"; // 👈 Replace with your YouTube Data API key
     let nextPageToken = "";
     let prevPageToken = "";
     let currentQuery = "";
@@ -274,84 +279,15 @@
     }
 
     async function searchVideos(pageToken = "") {
-  const queryInput = document.getElementById("searchInput");
-  const resultsDiv = document.getElementById("results");
-  resultsDiv.innerHTML = "";
+      const queryInput = document.getElementById("searchInput");
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
 
-  if (!pageToken) currentQuery = queryInput.value.trim();
-  if (!currentQuery) {
-    alert("Please enter a search term.");
-    return;
-  }
-
-  const apiUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-  apiUrl.search = new URLSearchParams({
-    part: "snippet",
-    type: "video",
-    maxResults: "24",
-    q: currentQuery,
-    key: apiKey,
-    pageToken
-  });
-
-  try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      resultsDiv.innerHTML = "<p>No results found.</p>";
-      return;
-    }
-
-    // Save next/prev page tokens
-    nextPageToken = data.nextPageToken || "";
-    prevPageToken = data.prevPageToken || "";
-
-    // Display each video
-    data.items.forEach(item => {
-      const id = item.id.videoId;
-      const title = item.snippet.title;
-      const thumbnail = item.snippet.thumbnails.medium.url;
-
-      const div = document.createElement("div");
-      div.className = "video";
-      div.innerHTML = `
-        <img src="${thumbnail}" alt="Thumbnail" onclick="playVideo('${id}')" />
-        <div class="video-info">
-          <div class="video-title">${title}</div>
-          <button onclick="addToPlaylist('${id}', '${title.replace(/'/g, "\\'")}')">Add to Playlist</button>
-        </div>
-      `;
-      resultsDiv.appendChild(div);
-    });
-
-    // 🔹 Add Next / Previous buttons
-    const paginationDiv = document.createElement("div");
-    paginationDiv.style.textAlign = "center";
-    paginationDiv.style.margin = "20px 0";
-
-    if (prevPageToken) {
-      const prevBtn = document.createElement("button");
-      prevBtn.textContent = "⬅️ Previous Page";
-      prevBtn.onclick = () => searchVideos(prevPageToken);
-      paginationDiv.appendChild(prevBtn);
-    }
-
-    if (nextPageToken) {
-      const nextBtn = document.createElement("button");
-      nextBtn.textContent = "Next Page ➡️";
-      nextBtn.onclick = () => searchVideos(nextPageToken);
-      paginationDiv.appendChild(nextBtn);
-    }
-
-    resultsDiv.appendChild(paginationDiv);
-
-  } catch (error) {
-    console.error("Search error:", error);
-    resultsDiv.innerHTML = "<p>Failed to fetch search results.</p>";
-  }
-}
-
+      if (!pageToken) currentQuery = queryInput.value.trim();
+      if (!currentQuery) {
+        alert("Please enter a search term.");
+        return;
+      }
 
       const apiUrl = new URL("https://www.googleapis.com/youtube/v3/search");
       apiUrl.search = new URLSearchParams({
@@ -391,6 +327,27 @@
           `;
           resultsDiv.appendChild(div);
         });
+
+        // Add pagination buttons
+        const paginationDiv = document.createElement("div");
+        paginationDiv.className = "pagination";
+
+        if (prevPageToken) {
+          const prevBtn = document.createElement("button");
+          prevBtn.textContent = "⬅️ Previous Page";
+          prevBtn.onclick = () => searchVideos(prevPageToken);
+          paginationDiv.appendChild(prevBtn);
+        }
+
+        if (nextPageToken) {
+          const nextBtn = document.createElement("button");
+          nextBtn.textContent = "Next Page ➡️";
+          nextBtn.onclick = () => searchVideos(nextPageToken);
+          paginationDiv.appendChild(nextBtn);
+        }
+
+        resultsDiv.appendChild(paginationDiv);
+
       } catch (error) {
         console.error("Search error:", error);
         resultsDiv.innerHTML = "<p>Failed to fetch search results.</p>";
