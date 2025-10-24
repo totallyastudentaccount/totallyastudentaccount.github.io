@@ -4,26 +4,129 @@
   <meta charset="UTF-8">
   <title>YouTube Search & Playlist</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #results, #playlist { margin-top: 20px; }
-    .video, .playlist-item { margin-bottom: 15px; display: flex; align-items: center; }
-    .video img, .playlist-item img { width: 120px; height: 90px; cursor: pointer; margin-right: 10px; }
-    .video-title { flex: 1; }
-    button { margin-left: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      background: #f8f8f8;
+    }
+
+    /* Left column: player + playlist */
+    #left {
+      width: 40%;
+      background: #fff;
+      padding: 20px;
+      border-right: 1px solid #ddd;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    #player {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #playlist {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .playlist-item img {
+      width: 80px;
+      height: 60px;
+      cursor: pointer;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+
+    /* Right column: search + results */
+    #right {
+      width: 60%;
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    #searchInput {
+      width: 70%;
+      padding: 8px;
+      font-size: 16px;
+    }
+
+    #results {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 15px;
+    }
+
+    .video {
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .video img {
+      width: 100%;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .video-title {
+      margin: 10px 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 14px;
+      background: #e53935;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #d32f2f;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
-  <h1>YouTube Search & Playlist</h1>
-  <input type="text" id="searchInput" placeholder="Search YouTube">
-  <button onclick="searchVideos()">Search</button>
+  <div id="left">
+    <h2>Now Playing</h2>
+    <div id="player">
+      <p>Select a video to play</p>
+    </div>
 
-  <div id="results"></div>
+    <h2>Playlist</h2>
+    <div id="playlist"></div>
+  </div>
 
-  <h2>Playlist</h2>
-  <div id="playlist"></div>
-
-  <h2>Player</h2>
-  <div id="player"></div>
+  <div id="right">
+    <h2>Search YouTube</h2>
+    <input type="text" id="searchInput" placeholder="Search YouTube videos...">
+    <button onclick="searchVideos()">Search</button>
+    <div id="results"></div>
+  </div>
 
   <script>
     const apiKey = "AIzaSyA0XIPgl1-esWiDqNU8LnIcW0nPhs7zTFs"; // 👈 Replace with your YouTube Data API v3 key
@@ -46,7 +149,7 @@
         div.className = "playlist-item";
         div.innerHTML = `
           <img src="https://img.youtube.com/vi/${item.id}/mqdefault.jpg" onclick="playFromPlaylist(${index})" />
-          <div>${item.title}</div>
+          <div style="flex:1;">${item.title}</div>
           <button onclick="removeFromPlaylist(${index})">❌</button>
         `;
         playlistDiv.appendChild(div);
@@ -80,7 +183,7 @@
     function playVideo(id) {
       const playerDiv = document.getElementById("player");
       playerDiv.innerHTML = `
-        <iframe width="560" height="315"
+        <iframe width="100%" height="315"
           src="https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1"
           frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
         </iframe>
@@ -130,12 +233,13 @@
           div.innerHTML = `
             <img src="${thumbnail}" alt="Thumbnail" onclick="playVideo('${id}')" />
             <div class="video-title">${title}</div>
-            <button onclick="addToPlaylist('${id}', '${title.replace(/'/g, "\\'")}')">➕ Add to Playlist</button>
+            <button onclick="addToPlaylist('${id}', '${title.replace(/'/g, "\\'")}')">➕ Add</button>
           `;
           resultsDiv.appendChild(div);
         });
 
         const paginationDiv = document.createElement("div");
+        paginationDiv.style.textAlign = "center";
         paginationDiv.style.marginTop = "1rem";
 
         if (prevPageToken) {
@@ -160,13 +264,11 @@
       }
     }
 
-    // Auto-advance playlist when video ends
     function setupAutoAdvance() {
       const playerDiv = document.getElementById("player");
       const observer = new MutationObserver(() => {
         const iframe = playerDiv.querySelector("iframe");
         if (!iframe) return;
-
         iframe.addEventListener("load", () => {
           const player = new YT.Player(iframe, {
             events: {
@@ -177,11 +279,9 @@
           });
         });
       });
-
       observer.observe(playerDiv, { childList: true });
     }
 
-    // Initialize
     renderPlaylist();
     setupAutoAdvance();
   </script>
